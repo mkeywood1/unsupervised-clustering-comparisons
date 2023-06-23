@@ -1,0 +1,6 @@
+matplotlib
+streamlit
+scikit-learn
+sentence_transformers
+kmodes
+mca

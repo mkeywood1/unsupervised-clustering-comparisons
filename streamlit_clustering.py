@@ -35,22 +35,10 @@ warnings.filterwarnings('ignore')
 
 
 # What are we trying to do?
-# 
-# 
 # Can we identify any natural groupings into personas?
-# - For example men with Type II diabetes tend to be X medication and not really interested in Trials, whereas women are on y medication and really interested in Trials
-# 
-## What questions should we use:
-# 
-# From Caroline: Our questions/interests are always pretty project specific, but generally we would be most interested in observing if there is any natural clustering in our data across any of the following areas: 
-# -	Area 1: Any social determinants of health (age, gender, race, ethnicity, rurality, education, income, insurance status, SES, etc.)
-# -	Area 2: Burdens experienced with their condition
-# -	Area 3: Typical healthcare interaction patterns/behavior (frequency, type of HCP interactions, engagement methods, etc.)
-# -	Area 4: Motivations or concerns for trial enrollment
-# -	Area 5: Preferences for trial engagement/involvement (communication, education, reimbursement, etc.)
-# 
-## A word of warning
-# Keep in mind that clustering is an exploratory technique and doesn’t necessarily imply causality. It should be used together with other methods to draw robust conclusions from patient survey responses.
+
+# Keep in mind that clustering is an exploratory technique and doesn’t necessarily imply causality. It should be used together with other methods to draw robust conclusions from
+# survey responses.
 
 
 # First define some helper functions
@@ -66,6 +54,9 @@ def age_ranges(x):
 
 
 def load_data(cols=[]):
+    print("------------")
+    print("Loading Data for" + str(cols))
+    print("------------")
     df = pd.read_csv('survey.csv')
 
     # So it seems Gender was a free text field and as such is pretty noise. But every row has a value, which is good. There are some obvious fixes:
@@ -108,6 +99,8 @@ def load_data(cols=[]):
     # Finally I think we can lose the `TimeStamp'.
     df.drop('Timestamp', axis=1, inplace=True)
 
+    # Filter to just the selected columns
+    if len(cols) > 0: df = df[cols]
     
     # separate continuous and categorical variable columns
     # (Although this is boilerplate I use and not really relvant as we have binned the only numerical column ('Age'))
@@ -127,6 +120,8 @@ def load_data(cols=[]):
         df_cat = pd.DataFrame()
         
     df_preprocessed = pd.concat([df_con, df_cat], axis=1)
+    
+    print(df.columns)
     
     return df, df_preprocessed
 
@@ -395,51 +390,6 @@ def do_lca(df_preprocessed):
     show_clusters(df_ca, df_preprocessed) 
 
 
-def get_question_metadata():
-    df, _ = load_data()
-    
-    question_metadata = {"unique_question_list": {}}
-    for c in df.columns:
-        qid = c.split(" ")[0]
-
-        if qid == "Country":
-            question_metadata["unique_question_list"][qid] = ""
-        else:
-            if "?" in c:
-                question_metadata["unique_question_list"][qid.split("_")[0] + " " + " ".join(c.split(" ")[1:]).split("?")[0] + "?"] = ""
-            else:
-                question_metadata["unique_question_list"][qid.split("_")[0] + " " + " ".join(c.split(" ")[1:]).split("  ")[0] + "?"] = ""
-
-    question_metadata["unique_question_list"] = list(question_metadata["unique_question_list"])
-    question_metadata["unique_question_list_string"] = "\n".join(question_metadata["unique_question_list"])
-    
-    question_metadata["multi_choice_questions"] = {}
-
-    for c in df.columns:
-        qid = c.split(" ")[0]
-
-        if qid not in ["Country", "Attention"]:
-            for delim in ["?  ", ".  "]:
-                if delim in c:
-                    question = qid.split("_")[0] + " " + " ".join(c.split(" ")[1:]).split(delim)[0]
-                    if question not in question_metadata["multi_choice_questions"]:
-                        question_metadata["multi_choice_questions"][question] = {}
-
-                        real_columns = []
-                        answers = []
-                        question_text = " ".join(question.split(" ")[2:])
-                        for col in df.columns:
-                            if question_text in col:
-                                real_columns.append(col)
-                                answers.append("".join((col.split(delim)[1:])))
-
-                        question_metadata["multi_choice_questions"][question]["question_body"] = question_text
-                        question_metadata["multi_choice_questions"][question]['columns'] = real_columns
-                        question_metadata["multi_choice_questions"][question]['answers'] = answers
-    
-    return question_metadata
-
-
 def kmeans_elbow_silhouette(preprocessed_X):
     kmeans_kwargs = {
         "init": "random",
@@ -609,49 +559,34 @@ def output_embedding(sbert_model, txt):
 
 
 # Some questions that would likely yield insightful clusters from this survey include:
-# - Questions 4a-4e on awareness of different treatment types. Clustering on these could group patients by level of treatment awareness.
-# - Questions 11, 12 and 13 on importance of understanding illness/treatment and actual level of understanding. Clustering on these could group patients by how well-informed they feel about their condition and care.
-# - Questions 16A, 23-26 on willingness to try new/experimental treatments. Clustering on these could group patients by how open they are to novel therapies.
-# - Questions 36, 38-40 on satisfaction with communication from treatment team. Clustering on these could group patients by level of satisfaction with the information provided by their doctors.
-# - Questions 47-50 on motivations for and satisfaction with participating in a clinical trial. Clustering on these could provide insights into the experiences of clinical trial participants.
-# 
-# In general, I would recommend choosing groups of questions that relate to:
-# - Awareness/understanding of illness and treatments
-# - Openness to trying new therapies
-# - Satisfaction with care and communication
-# - Experiences with clinical trials
-# 
-# These types of questions are likely to yield the most meaningful clusters, representing different patient segments based on knowledge, attitudes, and experiences. The clusters could then be analyzed to determine how to best support and communicate with each patient group.
 
-question_metadata = get_question_metadata()
+# - Age, Gender, Country - This can give you basic demographic clusters, e.g. young females in the US, middle-aged males in the UK, etc.
+# - self_employed, tech_company, remote_work - This can cluster people into groups like tech startup employees, remote freelancers, traditional office employees, etc.
+# - family_history, treatment, seek_help - This can cluster people into groups like those with a family mental health history who have sought treatment, those with no family history who have still sought help, those with a family history who have not sought help, etc.
+# - work_interfere, mental_vs_physical, obs_consequence - This can cluster people into groups like those whose work is highly impacted by mental health, those more impacted by physical health, those whose work is not really impacted by health issues, etc.
+# - benefits, care_options, wellness_program - This can cluster companies/employees into groups like those with strong mental health benefits and support programs, those with moderate benefits and programs, those with little or no mental health support.
+# - anonymity, coworkers, supervisor - This can cluster people into groups based on how open and understanding their work environment is about mental health issues. E.g. open and accommodating environments, moderately open environments, non-open environments.
+# - Age, treatment, mental_health_interview - This can cluster people into groups based on their mental health diagnosis and treatment journey, e.g. those diagnosed and treated early in life, those diagnosed and treated later in life, those undiagnosed or untreated, etc.
+# - No employees, Remote work, Tech company, Benefits, Care options, Wellness program - Company size and culture
+# - Seek help, Anonymity, Leave, Mental health consequence, Physical health consequence, Coworkers, Supervisor, Mental health interview, Physical health interview, Mental vs physical, Obs consequence - Stigma and consequences
 
-# questions_area_1 = ['Q4a', 'Q4b', 'Q4c', 'Q4d', 'Q4e']
-# questions_area_2 = ['Q11', 'Q12', 'Q13']
-# questions_area_3 = ['Q36', 'Q37', 'Q38', 'Q39A', 'Q39B', 'Q39', 'Q40']
-# questions_area_4 = ['Q47', 'Q48', 'Q49', 'Q50']
+# Combining columns across demographics, work life, health experiences and environment can provide very insightful clusters.
 
-# Get list of questions 
-questions = question_metadata['unique_question_list']
+# Load the data so we can get the columns
+df, _ = load_data()
 
 # Allow user to select questions
 # st.sidebar.markdown('## Select questions')
-selected_questions = st.sidebar.multiselect('Questions', questions, default=questions[:9] + questions[-4:])
+selected_questions = st.sidebar.multiselect('Questions', df.columns, ['Age', 'Gender', 'Country'])
 
 # Allow user to select the pre-processing method
 option = st.sidebar.radio('Clustering method', ['K-Means & PCA', 'K-Mode & MCA', 'Latent Class Analysis', 'K-Means & PCA & LLM'])
 
-# if st.sidebar.button('Cluster Data'): 
-
-selected_question_ids = [q.split(" ")[0] for q in selected_questions]
-# st.write(selected_question_ids)
-
 
 # Preprocess data based on option
-# Create appropriate pipeline for the preprocessing.
-# - Principal Component Analysis (PCA) is a dimensionality reduction technique that is used to reduce the number of features in a dataset, while retaining as much of the original variance and information in the dataset as possible. Therefore PCA can be useful for preprocessing data before clustering
 
-# Load the data
-df, df_preprocessed = load_data(selected_question_ids)
+# Load the data for the selected questions
+df, df_preprocessed = load_data(selected_questions)
 
 if option == 'K-Means & PCA': do_kmeans_pca(df_preprocessed)
 if option == 'K-Mode & MCA': do_kmode_mca(df_preprocessed)

@@ -3,7 +3,7 @@
 We've all done K-Means clustering examples and the results look good, but are they right, and what are other alternative Unsupervised Clustering Techniques
 
 # Data
-Kaggle, as we all know, is a waelth of data sets, do got this project I will use a Survey dataset from there.
+Kaggle, as we all know, is a wealth of data sets, do got this project I will use a Survey dataset from there.
 Specifically 'Mental Health in Tech Survey' - https://www.kaggle.com/datasets/osmi/mental-health-in-tech-survey
 I have included a copy of the data in this repo for convenience.
 

@@ -21,4 +21,4 @@ In my comparisons, I used a number of notebooks to test out the approaches above
 # Run the app in streamlit
 For convenience I put everything into a simple streamlit app
 It can be run locally: `streamlit run streamlit_clustering.py`
-Or at this HuggingFace Space () or Streamlit Cloud ().
+Or at this Streamlit Cloud site (https://unsupervised-clustering-comparisons-mwk.streamlit.app/).

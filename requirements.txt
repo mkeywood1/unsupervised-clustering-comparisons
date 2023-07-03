@@ -4,3 +4,4 @@ scikit-learn
 sentence_transformers
 kmodes
 mca
+stepmix
